@@ -1,4 +1,4 @@
-# Procedural Voxel Sandbox Terrain Generation — Notes, Experiments, and Current Approach
+# Procedural Voxel Sandbox Terrain Generation - Notes, Experiments, and Current Approach
 
 ## Introduction
 
@@ -7,6 +7,12 @@ I started exploring procedural terrain generation because I wanted to build a sa
 This document isn’t a tutorial or a polished repo. As I've worked on this project, the greatest two barriers to my progression have been the language and terms as well as the poor or inadequate search results. In other words, I don't know what I don't know and existing sources are either hyper specific or just inadequate. This is compounded by the fact that, as with most programming, there's a huge problem of beginners making tutorials which results in the blind leading the blind. This document is a running log of terms and approaches I've taken to solving this problem as well as their strengths and weaknesses. It covers a bit of everything because most of the documentation I’ve found has led me more than once to follow a method deep into a project only to realize it won’t get me the results I’m after. My focus here is on the sandbox/world generation itself as well as the core gameplay mechanics needed to interact with the world. This is in Unreal Engine 5 but core concepts are still applicable to other engines. 
 
 Because this is an evolving project, I’m not sharing full repositories until I reach a point where the results feel solid and worth presenting.
+
+---
+## Topics
+- [Essential Terms for Beginners](#essential-terms-for-beginners)
+- [Noise, Topography, and World Generation](#noise-topography-and-world-generation)
+- [Mesh Generation](#mesh-generation)
 
 ---
 ## Essential Terms for Beginners
@@ -52,7 +58,8 @@ This list is designed to explain key words that may not be apparent to beginners
 - These terms are somewhat important because I am refering to stuff that can be modified at runtime. Runtime generation is critical here because in many engines, such as UE5, assets/models can't be modified at runtime, especially with the introduction of stuff like Nanite. UE5 specifically sometimes allows mesh modifications in the editor but not in a packaged game so it's important to figure out if the component/actor that you are using can be modified at runtime.
 
 ---
-## Noise and Topography Generation
+## Noise, Topography, and World Generation
+## Mesh Generation
 
 
 
