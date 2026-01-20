@@ -10,24 +10,24 @@ Because this is an evolving project, I’m not sharing full repositories until I
 
 ---
 ## Topics
-- [Essential Terms for Beginners](#essential-terms-for-beginners)
-- [Noise, Topography, and World Generation](#noise-topography-and-world-generation)
+- [Intro for Beginners](#intro-for-beginners)
+- [Noise, Topography, and World Data Generation](#noise-topography-and-world-data-generation)
 - [Mesh Generation](#mesh-generation)
 - [World Partitioning, Chunks, and Memory Management](#world-partitioning-chunks-and-memory-management)
 
 ---
-## Essential Terms for Beginners
+## Intro for Beginners
 
-This list is designed to explain key words that may not be apparent to beginners. When I started this, I had no idea what to even look up, I just searched "procedural terrain programming tutorial" and "sandbox game in ue5 tutorial" which were generally fine for getting started but it was never adequate for full-scale projects.
+This list is designed to explain key words that may not be apparent to beginners. When I started this, I had no idea what to even look up, I just searched "procedural terrain tutorial" and "sandbox game in ue5 tutorial" which were generally fine for getting started but it was never adequate for full-scale projects.
 
 ### Procedural Generation
 - Procedural Generation is broad but it's not just about making pretty patterns or mathematically generated landscapes; it is a way to create something in a way that is predictable and replicable using some sort of algorithm. It is particularly useful in games because it allows for dynamic and infinite variations without the need of a developer or designer to hand-make the thing in question. For my purposes, it is used in two main ways:
 - Generating the world, terrain, foliage, and structures with noise (more on noise later).
-- Dynamically generating meshes to visually represent the world.
+- Dynamically generating meshes to visually represent the aforementioned world.
 
 ### Grid 
 ![Cartesian Grid](https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Cartesian_grid.svg/250px-Cartesian_grid.svg.png)
-- I'm sure you know what a grid is but its important to understand that the data used to represent terrain is stored in a sort of grid shape. In some cases, such as **Minecraft**, it's very obvious because the visual layout of objects is very square and everything is aligned, but in games like [**Astroneer**](https://en.wikipedia.org/wiki/Astroneer), the grid is far less apparent because the vertices/corners of triangle faces seem to be placed in very fluid positions.
+- I'm sure you know what a grid is but its important to understand that the data used to represent procedural terrain is almost always stored in a sort of grid shape. You *can* leave the traditional grid layout but this will make your life more difficult and this document is not made for that. In some cases, such as **Minecraft**, the grid is very obvious because the visual layout of objects is very square and everything is aligned, but in games like [**Astroneer**](https://en.wikipedia.org/wiki/Astroneer), the grid is far less apparent because the vertices/corners of triangle faces seem to be placed in very fluid positions.
 
 ### Sandbox
 - [Sandbox games](https://en.wikipedia.org/wiki/Sandbox_game) are generally any games that give you a bunch of tools to mess around with but no strict goals (goals can still be present though). Most games with procedurally generated terrain are generally considered sandbox games because you have so much freedom but "sandbox" technically has nothing to do with procedural terrain. Even  I may also refer to the world and its physics as "the sandbox".
@@ -50,9 +50,9 @@ This list is designed to explain key words that may not be apparent to beginners
 - [Brackeys - PROCEDURAL TERRAIN in Unity! - Mesh Generation](https://www.youtube.com/watch?v=64NblGkAabk) - This is a great starting place for any beginner. It gives a high level look into how meshes and the data work together. It's a perfect video for people who are just starting but it lacks long term practices for chunks/LODs
 - [Sebastian Lague - Procedural Terrain Generation](https://youtube.com/playlist?list=PLFt_AvWsXl0eBW2EiBtl_sxmDtSgZBxB3&si=P05Zr0TiyyIYseGp) - This is an excelent tutorial and it goes into depth about why you are taking every step that you do. It was key in my journey but the solution to stitching LODs (more on LODs can be found further down) of different resolutions is a bit crude and the shaders/texturing techniques are inadequate for having variance in your terrain such as biomes. Everthing else about this tutorial series is great for getting started with topographical stuff.
 
-### Voxel
+### Voxel/Volumetric
 ![Voxel points in space](https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Voxelgitter.png/250px-Voxelgitter.png) ![Voxel cubes](https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Voxels.svg/250px-Voxels.svg.png)
-- Summary - [Voxels](https://en.wikipedia.org/wiki/Voxel) are the units of data that are used to represent 3D space and the positions within it. It's easiest to visualize as blocky terrain such as with **Minecraft** but games like **No Mans Sky**, **Space Engineers**, **Astroneer**, **Teardown**, **Hytale**, **Terraria**, and **Enshrouded** are also good examples of this. It's important to know that voxels are really just the abstract 3D data but the physical mesh drawn over that data can be anything whether it's blocky, rounded, or even volumetric like water or fog. This method still usually has actors/objects placed into the chunk - such as trees, workbenches, and grass - but the bulk of the world is represented as voxels.
+- Summary - "Volumetric" and "Voxels" are used in similar contexts because they represent different levels of abstraction. Volumetric things are broadly any mathematic way to represent a volume or 3D space. Voxel's are volumetric but they are specifically samples of a volume represented in a 3D grid. This is important for data management because they represent a finite and simplified way to think about the space. [Voxels](https://en.wikipedia.org/wiki/Voxel) are the units of data that are used to represent 3D space and the positions within it. It's easiest to visualize as blocky terrain such as with **Minecraft** but games like **No Mans Sky**, **Space Engineers**, **Astroneer**, **Teardown**, **Hytale**, **Terraria**, and **Enshrouded** are also good examples of this. It's important to know that voxels are really just the abstract 3D data but the physical mesh drawn over that data can be anything whether it's blocky, rounded, or even volumetric like water or fog. This method still usually has actors/objects placed into the chunk - such as trees, workbenches, and grass - but the bulk of the world is represented as voxels.
 - Strength - Its main value in games is the ability to have overhangs and complex shapes as a form of data that is dynamic and that can easily be writen and read to memory. This means foliage and structures aren't just placed on top of the terrain, they can be part of the terrain itself. This also means that a single mesh can be used to represent everything in the chunk rather than the topographical approach of having hundreds of thousands of objects in a chunk. It's important to note that all the games I've mentioned have a hybrid approach of objects/actors and the terrain itself (whether it's topgraphical or not) but the voxel approach significantly culls the number of actors in a given scene.
 - Weakness - If you are looking to have organic/rounded terrain, it's much more complex than topographical terrain in terms of comprehensibility and baseline performance but blocky terrain is only marginally more complex than the topgraphical approach. The amount of data required to represent voxles is very high so you have to get into the weeds of datastructures to make sure you're managing memory properly. If you understand octrees/quadtrees, this may not be a problem but stitching chunks together that have different levels of detail is a huge headache.
 
@@ -65,18 +65,23 @@ This list is designed to explain key words that may not be apparent to beginners
 - These terms are somewhat important because I am refering to stuff that can be modified at runtime. Runtime generation is critical here because in many engines, such as UE5, assets/models can't be modified at runtime, especially with the introduction of stuff like Nanite. UE5 specifically sometimes allows mesh modifications in the editor but not in a packaged game so it's important to figure out if the component/actor that you are using can be modified at runtime.
 
 ---
-## Noise, Topography, and World Generation
+## Noise, Topography, and World Data Generation
+This section is about the initial generation of the world. For those of you who are newer, it's important to know there's two main types of procedural generation happening, the data generation and then the mesh/asset generation. The data is the abstract information while the mesh/assets are the visual/physical representation of that data. Or, in other words, the data layer is the backend while the mesh/assets are the front end. This section is about the initial generation of that data which means, if you wanted to have a hand crafted world like **Enshrouded** you could skip this step. But, noise is useful for texturing too so it is worth understanding all of this. In all honesty, this is the easy part and there are great tutorials about this subject but the one takeaway from this document that beginners should know is that Perlin Noise is the most popular type of noise but it is also pretty dated so you should make sure you understand other types of noise too.
+
+### Understanding Randomness
+The first thing to understand about procedural generation is that randomness is never truely achievable (we could argue about whether true-random even exists in the real world but I'd rather not). We can have figures that appear random from a human perspective but they are really just complex equations; if you have the same seed, you can replicate the exact same results over and over again which is how we know something is not truely random. This is called "pseudo-random". This is why seeds in Minecraft produce the same result for everyone that has the seed.
 
 ### What is Noise?
-Noise has a few similar terms such as procedural texture or [gradient noise](https://en.wikipedia.org/wiki/Gradient_noise). In the case of terrain, it is a pseudo-random way to generate the shape of terrain in a way that looks natural but that is also consistent throughout the world. Pseudo-random in this case means that it looks random but it's not actually random at all. The most famous type of noise is perlin noise and it is commonly referenced in procedural terrain tutorials but there are others such as the following:
--Simplex Noise (like perlin noise but a bit newer and faster)
+Noise has a few similar terms such as procedural texture or [gradient noise](https://en.wikipedia.org/wiki/Gradient_noise). In the case of terrain, it is a way to generate structured randomness. I say "structured" because randomness would just be ugly static but we want interesting forms/structures like mountains and caves and noise is the tools to achieve that. The most famous type of noise is perlin noise and it is commonly referenced in procedural terrain tutorials but there are others such as the following:
+-[Simplex Noise](https://en.wikipedia.org/wiki/Simplex_noise) (like perlin noise but a bit newer and faster)
+![Simplex Noise](https://en.wikipedia.org/wiki/File:SimplexNoise2D.png)
 -Fractal Noise
--Celular/Voronoi Noise
+-[Celular/Voronoi/Worley Noise](https://en.wikipedia.org/wiki/Worley_noise)
+![Worley Noise](https://en.wikipedia.org/wiki/File:Worley.jpg)
 
 ### Why Use Noise?
-Landscapes and terrain need a way to look organic and natural. Unfortunately this means there needs to be an element of randomness and predicatbility mixed together. Things as large as biomes and hills are sort of just blobs of space. If you generate your entire world all at once, you *could* just peak at neighboring voxels to decide how to place the next voxel, but that brute force method is ineffecient and breaks down in chunk-based worlds. Imagine aproaching a single chunk from two different sides, you'll end up with weird transitions and unpredictable terrain. If that didn't make sense, worry not, it doesn't have to, what you need to know is that noise let's you decide how to generate a voxel (or pixel) without having to understand anything about its neighbors. If you want a massive-chunk based world, this is 
+Landscapes and terrain need a way to look organic and natural. Unfortunately this means there needs to be an element of randomness and predicatbility mixed together. Things as large as biomes and hills are seemingly random but they still have form. But how can we make our voxels cohesive with one another such as blocks that neighbor eachother on slopes? If you generate your entire world all at once, you *could* just peak at neighboring voxels to decide how to place the next voxel (check out errosion algorithms for this), but that brute force method doesn't work in chunk-based massive worlds. Imagine aproaching a single chunk from two different sides, you'll end up with weird transitions and unpredictable terrain. If that didn't make sense, worry not, it doesn't have to, what you need to know is that noise let's you decide how to generate a voxel (or pixel) without having to understand anything about its neighbors. If you want a massive-chunk based world, this is absulutely necessary.
 
-###
 
 ---
 ## Mesh Generation
