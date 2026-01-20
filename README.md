@@ -74,10 +74,10 @@ The first thing to understand about procedural generation is that randomness is 
 ### What is Noise?
 Noise has a few similar terms such as procedural texture or [gradient noise](https://en.wikipedia.org/wiki/Gradient_noise). In the case of terrain, it is a way to generate structured randomness. I say "structured" because randomness would just be ugly static but we want interesting forms/structures like mountains and caves and noise is the tools to achieve that. The most famous type of noise is perlin noise and it is commonly referenced in procedural terrain tutorials but there are others such as the following:
 -[Simplex Noise](https://en.wikipedia.org/wiki/Simplex_noise) (like perlin noise but a bit newer and faster)
-![Simplex Noise](https://en.wikipedia.org/wiki/File:SimplexNoise2D.png)
+-![Simplex Noise](https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/SimplexNoise2D.png/250px-SimplexNoise2D.png)
 -Fractal Noise
 -[Celular/Voronoi/Worley Noise](https://en.wikipedia.org/wiki/Worley_noise)
-![Worley Noise](https://en.wikipedia.org/wiki/File:Worley.jpg)
+-![Worley Noise](https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Worley.jpg/250px-Worley.jpg)
 
 ### Why Use Noise?
 Landscapes and terrain need a way to look organic and natural. Unfortunately this means there needs to be an element of randomness and predicatbility mixed together. Things as large as biomes and hills are seemingly random but they still have form. But how can we make our voxels cohesive with one another such as blocks that neighbor eachother on slopes? If you generate your entire world all at once, you *could* just peak at neighboring voxels to decide how to place the next voxel (check out errosion algorithms for this), but that brute force method doesn't work in chunk-based massive worlds. Imagine aproaching a single chunk from two different sides, you'll end up with weird transitions and unpredictable terrain. If that didn't make sense, worry not, it doesn't have to, what you need to know is that noise let's you decide how to generate a voxel (or pixel) without having to understand anything about its neighbors. If you want a massive-chunk based world, this is absulutely necessary.
