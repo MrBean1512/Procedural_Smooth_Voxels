@@ -1,29 +1,34 @@
-# Procedural Smooth Voxel Terrain Generation - Notes, Experiments, and Current Approach
+# Procedural Smooth Voxel Generation in Arbitrary Sized Worlds - Notes, Experiments, and Current Approach
 
 ## Introduction
 
 I started exploring procedural terrain generation because I wanted to build a sandbox game that wasn't limited to the classic blocky aesthetic. I've played **Minecraft** since it came out but **Valheim** first actually sparked my interest and then **Enshrouded** showed that the highly detailed voxel terrain I dreamed of is actually doable.
 
-This document isn’t a tutorial or a polished repo. As I've worked on this project, the greatest two barriers to my progression have been the language and terms surrounding this kind of work not to mention the sparce online resources. In other words, I don't know what I don't know and existing sources are either hyper specific or just inadequate. Hyperspecfic articles and tutorials wouldn't be a problem if it wasn't for the fact that there's a lot of possible approaches to this problem and it's important to know of all your options. This is compounded by the fact that, as with most programming, there's a huge problem of beginners making tutorials which results in the blind leading the blind. This document is a running log of terms and approaches I've taken to solving this problem as well as their strengths and weaknesses. It covers a bit of everything because most of the documentation I’ve found has led me more than once to follow a method deep into a project only to realize it won’t get me the results I’m after.
+Getting started with procedural worlds is easy as there are many online resources for that, only the truly desperate would end up digging through the internet long enough to end up here. So, chances are strong that if you are reading this, you've at least gotten a basic understanding of this topic. Nonetheless, I'm including basic information and terms to help lay out my own direction and thinking process and to maybe help you get on the same page as well before entering deeper topics. The main useful parts of this document for most people will be to compare similar ideas along with their strenghts and weaknesses.
+
+This document isn’t a tutorial or a polished repo. As I've worked on this project, the greatest two barriers to my progression have been the language and terms surrounding this kind of work not to mention the sparce online resources. In other words, I don't know what I don't know and existing sources are either hyper specific or just inadequate. Hyperspecfic articles and tutorials wouldn't be a problem if it wasn't for the fact that there's a lot of possible approaches to this problem and it's important to know of all your options. This is compounded by the fact that, as with most programming, there's a huge problem of beginners making tutorials which results in the blind leading the blind. This document is a running log of terms and approaches I've taken to solving this problem as well as their strengths and weaknesses. It covers a bit of everything because most of the documentation I’ve found has led me more than once to follow a method deep into a project only to realize it won’t get me the results I’m after, but it will mainly focus on smooth voxels generation in arbitrarily large worlds.
 
 My focus here is on the sandbox/world generation itself as well as the core gameplay mechanics needed to interact with the world. More specifically, I am interested in exploring smooth voxel terrain and how it's meshes work with LOD and stitching. If you are new to procedural terrain, there are great tutorials out there that will be far more helpful for getting started and I'd recommend pairing them with this so you can learn more about the limitations of each approach you will learn. For example, you will encounter perlin noise, which is great, but very few tutorials will reveal that perlin noise is actually outdated and simplex noise is usually a better alternative. This document will help bridge gaps such as that. I will work in Unreal Engine 5 and c++ but the core concepts are still applicable to other engines. This will also boradly talk about various topics with links but it will not provide code walkthroughs.
 
 Because this is an evolving project, I’m not sharing full repositories until I reach a point where the results feel solid and worth presenting.
 
 ---
-## Topics
-- [Intro for Beginners](#intro-for-beginners)
-- [Noise, Topography, and World Data Generation](#noise-topography-and-world-data-generation)
+## Table of Contents
+- [Common and Conflated Terms](#common-and-conflated-terms)
+- [Recommended Learning Path](#recommended-learning-path)
+- [Other Common Approaches](#other-common-approaches)
+- [Noise for Topography and World Data Generation](#noise-for-topography-and-world-data-generation)
+- [Types of Noise](types-of-noise)
 - [World Partitioning, Chunks, and Memory Management](#world-partitioning-chunks-and-memory-management)
 - [Basics of Mesh Generation](#basics-of-mesh-generation)
 - [Mesh Stitching With LOD](#mesh-stitching-with-lod)
 
 ---
 ## Common and Conflated Terms
-This list is designed to explain key words that may not be apparent to beginners. When I started this, I had no idea what to even look up, I just searched "procedural terrain tutorial" and "sandbox game in ue5 tutorial" which were generally fine for getting started but it was never adequate for full-scale projects. Those terms were great for getting started but the more I learned, the more I realized that the resources needed for full scale-projects were sparce.
+This list is designed to explain key words that may not be apparent to beginners. When I started this, I had no idea what to even look up, I just searched "procedural terrain tutorial" and "sandbox game in ue5 tutorial" which were generally fine for getting started but it was never adequate for full-scale projects. Those terms were great for getting started but the more I learned, the more I realized that the resources needed for full scale-projects were sparce. Keep in mind more terms will be throughout the document (see [table of contents](#table-of-contents)), these are just some foundational ones.
 
 ### Procedural
-The word "procedural" is a bit misrepresented in this area of study because most beginners tend to think of it as just the process of making worlds algorithmically rather than by hand. "Procedural" is literally just the adjective of "process", or in this case, the steps. So one of the first things to know is that this word is used *frequenly* but it's not a helpful word when we start to get to more advanced topics with specific algorithms because the word can be so broadly applied to any program. It is a useful keyword for finding related information or communities though.
+The word "procedural" is a bit misrepresented in this area of study because most beginners tend to think of it as just the process of making worlds algorithmically rather than by hand. "Procedural" is literally just the adjective of "process", or in this case, the steps. So one of the first things to know is that this word is used *frequenly* with voxel games but it's not a helpful word when we start to get to more advanced topics with specific algorithms because the word can be so broadly applied to any program. It is a useful keyword for finding related information or communities though.
 
 ### Voxel
 A voxel is simply a sample of a volume in 3D space. Every block in **Minecraft**, for instance, is a representation of a voxel. The word "voxel" is a combination of the words "volume" and "pixel", in other words, it is a 3D-pixel. Normally, 3D models are just meshes with textures & colliders wrapped over that mesh; they are just the surface of an object but nothing within. Voxels provide a data-friendly way to represent a full 3D volume within and without.
@@ -34,18 +39,40 @@ Common terms used with voxels are as follows:
 - **Tile** (or square) - One thing that can get confusing is the distinction between a generic tile-based game and a 2D voxel game. "Tiles" are visual cells in a 2D grid, each one directly representing a sprite or gameplay element. 2D voxels are samples of a data field arranged in a grid, usually storing values like density or material rather than artwork. The word "voxel" technically refers to a 3D volume element, so calling a 2D sample a voxel is not technically correct. Even so, many developers use the term informally because it captures the idea of a grid of data driven cells rather than a tilemap of sprites. **Terraria** is a great example of this as well as **Valheim**. Although Valheim is confusing because it is a 3D game represented by 2D data.
 
 ---
-## General Steps To Learning
-Getting started with procedural worlds is easy as there are many online resources for that, only the truly desperate would end up digging through the internet long enough to end up here. So, chances are strong that if you are reading this, you've at least gotten a basic understanding of this topic. Nonetheless, I'm including basic information and terms to help lay out my own direction and thinking process and to maybe help you get on the same page as well before entering deeper topics.
+## Recommended Learning Path
+If you're itching to get started, here's some starting points and a general direction to follow. Again, this document is not a tutorial but a collection of ideas and approaches that are often confused with one another. The approach you take in your final product will likely be different but if you understand this stuff, you will at least know where to start. If you get stuck on a certain detail, the following sections in the [table of contents](#table-of-contents) may be able to give you some direction.
 
 ### Step 1 - Make a mesh using a 2D heightmap
-Voxel-based games are difficult to start because both the data and the meshes are both generative 3D elements. 3D data in particular is very performance-heavy as relatively small areas require a lot of data. A 32x32x32 grid represents just over 32k elements which are constantly being writen/read to memory and processed for chunk/mesh generation. This means you have to understand complex elements of data structures and memory management while also worrying about visual stuff like vertex placement and compute shaders. For the sake of this document, it's good to start mesh generation with more 2D thinking so that you can at least get some traction before diving into the rough stuff.
+Voxel-based games are difficult to start because both the data and the meshes are both generative 3D elements. 3D data in particular is very performance-heavy as relatively small areas require a lot of data. A 32x32x32 grid represents just over 32k elements which are constantly being writen/read to memory and processed for chunk/mesh generation. This means you have to understand complex elements of data structures and memory management while also worrying about visual stuff like vertex placement and compute shaders. For the sake of this document, while this doesn't function like voxels, it's good to start mesh generation with more 2D thinking so that you can at least get some traction before diving into the hard stuff.
 
-I highly recommend this tutorial if you are new to everything: [Sebastian Lague - Procedural Terrain Generation](https://youtube.com/playlist?list=PLFt_AvWsXl0eBW2EiBtl_sxmDtSgZBxB3&si=P05Zr0TiyyIYseGp)
+**Valheim** is the best example of a game that generally uses this method. It's not good if you want caves and overhangs or if you want structures to be part of the voxel mesh, but Valheim shows that great games *can* be made with this somewhat simple method.
 
+I highly recommend this tutorial if you are new to everything: [Sebastian Lague - Procedural Terrain Generation](https://youtube.com/playlist?list=PLFt_AvWsXl0eBW2EiBtl_sxmDtSgZBxB3&si=P05Zr0TiyyIYseGp) It may be outdated soon, but I am sure there are plent of other videos of the same caliber.
 
+You should be familiar with the following concepts before you move on to the next step:
+- Basics of procedural terrain with perlin noise
+- Simple mesh generation
+- Data Management with 2D arrays and chunks
+- Simple texturing techniques with shaders
+- Basics of LODs
+
+### Step 2 - Add quadtrees for chunking
+[Quadtrees](https://en.wikipedia.org/wiki/Quadtree) are overkill for a game where the final product uses 2D heightmaps. The only reason I'd recommend this for a game like **Valheim** is if you want extremely high render distances. Most games sort of scale their worlds down for the sake of gameplay and rendering but if you want realistic scales, this could be useful. The main reason I suggest learning this is because you will eventually have to learn about octrees for 3D voxels if you want a planet or world with significant depth. If you want a **Minecraft** style world that is generated horizontally then you could skip this step, but smooth voxels are likely to have limited performance with out octrees.
+
+The main thing to know about this method is that the way you store chunks is fundamentally changed but the meshing is nearly identical to Step 1.
+
+The most popular type of chunking is a simple grid-based system. Horizontal worlds like **Minecraft** and the afformentioned tutorial in Step 1 use this method. It is really easy to conceptualize because it is just a 2D grid. Minecraft actually has a second layer of chunks that few people know about called regions. Chunks are chunked together in regions which are saved as actual files in the minecraft world. Check out the algor
+
+### Step 3 - Make a 3D voxel world using marching cubes
+Marching cubes is a popular method for voxel-based terrain because it is the most intuitive method when it comes to smooth 3D mesh generation. Marching cubes has its weaknesses for mesh generation but it's a good option for getting started because it allows you to focus on more complex memory managment techniques without simultaneiously having to worry about the signifcant learning curve added to mesh generation with distance fields. Don't know what that is? Don't worry cause at this point you don't have to.
+
+The first thing to know is that a topographical mesh, such as in Step 1 or Valheim, is easy because the mesh vertices are a simple grid with consistent xy coordinates where only the z coordinates are modified based on the heightmap. In other words, once you make a flat grid mesh, you only have to change it in a single dimension. 3D meshing suddenly goes up in complexity because you have to worry about generating
 
 ---
-## Noise, Topography, and World Data Generation
+## Other Common Approaches
+
+---
+## Noise for Topography and World Data Generation
 This section is about the initial generation of the world. For those of you who are newer, it's important to know there's two main types of procedural generation happening, the data generation and then the mesh/asset generation. The data is the abstract information while the mesh/assets are the visual/physical representation of that data. Or, in other words, the data layer is the backend while the mesh/assets are the front end. This section is about the initial generation of that data which means, if you wanted to have a hand crafted world like **Enshrouded** you could skip this step. The data only needs to be generated if there is no existing save-data for a given space. But, noise is useful for texturing too so it is worth understanding all of this. In all honesty, this is the easy part and there are great tutorials about this subject but the one takeaway from this document that beginners should know is that Perlin Noise is the most popular type of noise but it is also pretty dated so you should make sure you understand other types of noise too.
 
 ### Understanding Randomness
@@ -109,6 +136,15 @@ For beginners, results of noise functions are pretty normalized (if you don't kn
 1.  This is how you escape the “Perlin look.”
 
 ---
+## Types of Noise
+
+### Perlin Noise
+The most popular type of noise by far is perlin noise. It works well for many things, but I do not recommend it as Simplex Noise achieves the same results with much better performance. Perlin noise has dominated the industry as is evidenced by the fact that Unity doesn't have built-in support for simplex but it does support perlin. I can't say with certainty why this is but it may have to do with the fact that simplex noise is relatively new and even then it was patented until very recently.
+
+### Simplex Noise
+Simplex achieves the same results as Perlin Noise but at a faster computational rate
+
+---
 ## World Partitioning, Chunks, and related Data Structures
 - These terms will broadly by referred to as chunking throughout the document.
 - Unfortunately wikipedia seems to have poor documents on this and I'm trying to provide links that will likely be around for a while but [Minecraft offers a good way to think about this topic](https://minecraft.fandom.com/wiki/Chunk). If you own the game and want to see it in action, press F3+G while in a game to show chunk boundaries.
@@ -122,10 +158,11 @@ Think of your world in three main layers:
 3. World - In terms of data trees, this is a **root** of your data. This is the largest unit that encompasses everything.
 
 ### Why Use Chunking?
-The main limit on voxel games is data lookup times. If the data of each tile is stored separately, we get slower read/write times (O(n)) as the world gets larger. If the data is stored contiguously in an array, it's nearly instant (O(1)) to read/write. But storing the data together limits the total size of the array because it would mean expanding the array (which means copying/pasting it) every time we want to expand the world. We *could* store the entire game world into one contiguous space in memory such as a single array. Games like **Teardown** might do this but it severely limits the possible size of the world. If you want massive scales, you have to break it apart into layers. Each layer increases complexity but decreases lookup times.
+The main limit on voxel games is data lookup times. If the data of each voxel is stored separately, we get slower read/write times (O(n)) as the world gets larger. If the data is stored contiguously in an array, it's nearly instant (O(1)) to read/write. But storing the data together limits the total size of the array because it would mean expanding the array (which means copying/pasting it) every time we want to expand the world. Furthermore, when creating a world file, we don't weant all the data in a single file because it would mean crazy lookup times for huge worlds.
+We *could* store the entire game world into one contiguous space in memory such as a single array. Games with small worlds like **Teardown** might do this but it severely limits the possible size of the world. If you want massive scales, you have to break it apart into batches where each batch is stored separately in memory.
 
 ### Chunking Methods
-Minecraft Chunks are very gridlike which makes them easy to conceptualize. In minecraft, chunks are broken into 16x16x320 blocks, so from a top-down perspective it appears very gridlike. Unfortunately for you, dear reader, chunking doesn't end there. What many people don't know is that minecraft chunks are actually contained in even larger chunks that they call regions. It's possible to just end at the simple chunks, but then you could run into soft limits to the size of your world. **Valheim** and **Terraria** likely do this or could at least get away with it because the worlds are finite, but, again, this depends on the scale of your world. Even Minecraft regions eventually have issues but the rate that lookuptimes become cumbersome at that scale is only in edge cases like on huge or long-term minecraft servers. Very few users actually push their worlds to such an intense distance so anything more isn't really worth your time. Just like with storing individual voxels, the more chunks you have, the longer the lookup times become. If you want near-infinite or massive worlds like planets, you have to start layering chunks into larger chunks. To be clear, no game is infinite; Minecraft, for instance, is limited to 32bit integer coordinates (just over 2 million blocks from spawn) but the scale is large enough that we can effectively treat it as infinite. 
+Minecraft Chunks are very gridlike which makes them easy to conceptualize. In minecraft, chunks are broken into 16x16x320 blocks, so from a top-down perspective it appears very gridlike. Unfortunately for you, dear reader, chunking doesn't end there. What many people don't know is that minecraft chunks are actually contained in even larger chunks that they call regions. It's possible to just end at one layer of chunks, but for massive worlds we need to have layers of chunks. Chunk-ception, if you will. . then you could run into soft limits to the size of your world. **Valheim** and **Terraria** likely do this or could at least get away with it because the worlds are finite, but, again, this depends on the scale of your world. Even Minecraft regions eventually have issues but the rate that lookuptimes become cumbersome at that scale is only in edge cases like on huge or long-term minecraft servers. Very few users actually push their worlds to such an intense distance so anything more isn't really worth your time. Just like with storing individual voxels, the more chunks you have, the longer the lookup times become. If you want near-infinite or massive worlds like planets, you have to start layering chunks into larger chunks. To be clear, no game is infinite; Minecraft, for instance, is limited to 32bit integer coordinates (just over 2 million blocks from spawn) but the scale is large enough that we can effectively treat it as infinite. 
 
 ---
 ## Basics of Mesh Generation
@@ -143,41 +180,3 @@ Cubic generation is the next easiest way to generate voxels because each vertex 
 
 ---
 ## Mesh Stitching With LOD
-
-
-
----
----
----
-**Ignore this**
-
-
-
-
-### Mesh Generation
-- Converting voxels into actual meshes
-- Working with marching cubes, dual contouring, surface nets, 
-- Handling vertices, triangles, normals, and tangents
-- Generating collision meshes vs. visual meshes
-
-### World Structure & Optimization
-- Chunk systems for streaming large worlds
-- Level of Detail (LOD) strategies for distant terrain
-- Octrees and spatial partitioning
-- Mesh stitching to avoid cracks between chunks
-
-### Shaders, Compute-Shaders Materials, Textures
-- Offloading heavy voxel and mesh operations
-- Adding details to materials/textures/shaders to make it more than just a flat texture.
-- Writing shaders to color and texture terrain
-- Using triplanar mapping to avoid stretching
-- GPU‑side calculations for terrain detail
-
-## Methods with Pros & Cons
-
-### Noise
-
-#### Perlin Noise
-- **Details** - Perlin Noise is one of the most famous noise algorithms. It generates sort of hills and valleys
-- **Pros** - Tried and true and generally good for simple terrain
-- **Cons** - Sorta old, there's alternatives that are newer, slightly faster, and do almost the same thing
