@@ -27,10 +27,10 @@ Because this is an evolving project, I’m not sharing full repositories until I
 
 ---
 ## Common and Conflated Terms
-This list is designed to explain key words that may not be apparent to beginners. When I started this, I had no idea what to even look up, I just searched "procedural terrain tutorial" and "sandbox game in ue5 tutorial" which were generally fine for getting started but it was never adequate for full-scale projects. Those terms were great for getting started but the more I learned, the more I realized that the resources needed for full scale-projects were sparce. Keep in mind more terms will be throughout the document (see [table of contents](#table-of-contents)), these are just some foundational ones.
+This list is designed to explain key words that may not be apparent to beginners. Many solutions seem the same on the surface but have vastly different use-cases and implications. When I started this, I had no idea what to even look up, I just searched "procedural terrain tutorial" and "sandbox game in ue5 tutorial" which were generally fine for getting started but it was never adequate for full-scale projects. Those terms were great for getting started but the more I learned, the more I realized that the resources needed for full scale-projects were sparce. Keep in mind more terms will be throughout the document (see [table of contents](#table-of-contents)), these are just some foundational ones to get started with.
 
 ### Procedural
-The word "procedural" is a bit misrepresented in this area of study because most beginners tend to think of it as just the process of making worlds algorithmically rather than by hand. "Procedural" is literally just the adjective of "process", or in this case, the steps. So one of the first things to know is that this word is used *frequenly* with voxel games but it's not a helpful word when we start to get to more advanced topics with specific algorithms because the word can be so broadly applied to any program. It is a useful keyword for finding related information or communities though.
+The word "procedural" is a bit misrepresented in this area of study because most beginners tend to think of it as just the process of making worlds algorithmically rather than by hand. "Procedural" is literally just the adjective of "process" which sort of dulls the magic cause all code is a process. So one of the first things to know is that this word is used *frequenly* with voxel games but it's not a helpful word when we start to get to more advanced topics with specific algorithms because the word can be so broadly applied to any program. It is a useful keyword for finding related information or communities though because it's used so prevalently when talking about noise generation.
 
 ### Voxel
 A voxel is simply a sample of a volume in 3D space. Every block in **Minecraft**, for instance, is a representation of a voxel. The word "voxel" is a combination of the words "volume" and "pixel", in other words, it is a 3D-pixel. Normally, 3D models are just meshes with textures & colliders wrapped over that mesh; they are just the surface of an object but nothing within. Voxels provide a data-friendly way to represent a full 3D volume within and without.
@@ -44,12 +44,12 @@ Common terms used with voxels are as follows:
 ## Recommended Learning Path
 If you're itching to get started, here's some starting points and a general direction to follow. Again, this document is not a tutorial but a collection of ideas and approaches that are often confused with one another. The approach you take in your final product will likely be different but if you understand this stuff, you will at least know where to start. If you get stuck on a certain detail, the following sections in the [table of contents](#table-of-contents) may be able to give you some direction.
 
-### Step 1 - Make a mesh using a 2D heightmap
+### Step 1 - Make a 3D mesh using a 2D heightmap
 Voxel-based games are difficult to start because both the data and the meshes are both generative 3D elements. 3D data in particular is very performance-heavy as relatively small areas require a lot of data. A 32x32x32 grid represents just over 32k elements which are constantly being writen/read to memory and processed for chunk/mesh generation. This means you have to understand complex elements of data structures and memory management while also worrying about visual stuff like vertex placement and compute shaders. For the sake of this document, while this doesn't function like voxels, it's good to start mesh generation with more 2D thinking so that you can at least get some traction before diving into the hard stuff.
 
-**Valheim** is the best example of a game that generally uses this method. It's not good if you want caves and overhangs or if you want structures to be part of the voxel mesh, but Valheim shows that great games *can* be made with this somewhat simple method.
+**Valheim** is the best example of a game that generally uses this heightmap method. It's not good if you want caves and overhangs or if you want structures to be part of the voxel mesh, but Valheim shows that great games *can* be made with this relatively simple method.
 
-I highly recommend this tutorial if you are new to everything: [Sebastian Lague - Procedural Terrain Generation](https://youtube.com/playlist?list=PLFt_AvWsXl0eBW2EiBtl_sxmDtSgZBxB3&si=P05Zr0TiyyIYseGp) It may be outdated soon, but I am sure there are plent of other videos of the same caliber.
+I highly recommend this tutorial if you are new to everything: [Sebastian Lague - Procedural Terrain Generation](https://youtube.com/playlist?list=PLFt_AvWsXl0eBW2EiBtl_sxmDtSgZBxB3&si=P05Zr0TiyyIYseGp) It may be outdated soon, but I am sure there are plenty of other videos of the same caliber.
 
 You should be familiar with the following concepts before you move on to the next step:
 - Basics of procedural terrain with perlin noise
@@ -58,14 +58,19 @@ You should be familiar with the following concepts before you move on to the nex
 - Simple texturing techniques with shaders
 - Basics of LODs
 
-### Step 2 - Add quadtrees for chunking
-[Quadtrees](https://en.wikipedia.org/wiki/Quadtree) are overkill for a game where the final product uses 2D heightmaps. The only reason I'd recommend this for a game like **Valheim** is if you want extremely high render distances. Most games sort of scale their worlds down for the sake of gameplay and rendering but if you want realistic scales, this could be useful. The main reason I suggest learning this is because you will eventually have to learn about octrees for 3D voxels if you want a planet or world with significant depth. If you want a **Minecraft** style world that is generated horizontally then you could skip this step, but smooth voxels are likely to have limited performance with out octrees.
+### Step 2 - Add Chunks
+If you followed the afformentioned tutorial, you would have done this already and you can move on. If you haven't, keep reading.
+
+The world is not made up of a single mesh, nor is it made of individual triangles, it is made of batched sections of voxels called chunks. Read [this section](#world-partitioning-chunks-and-memory-management) to learn more.
+
+### Step 3 - Add quadtrees for chunking
+There are two reasons you would want to learn about quadtrees. The main reason I suggest learning this is because you will eventually have to learn about octrees for 3D voxels if you want a planet or world with significant depth. The other reason is if you want very high render distances. Horizontally generated worlds like **Minecraft** or **Valheim** use a pretty simple system for chunking but their render distances are severely limited; as the render distance increases, computational demand goes up exponentially. [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) are probably overkill for a game where the final product uses 2D heightmaps; the only reason I'd recommend this for a game like **Valheim** is if you want extremely high render distances. Most games sort of scale their worlds down for the sake of gameplay and rendering but if you want realistic scales, this could be useful.
 
 The main thing to know about this method is that the way you store chunks is fundamentally changed but the meshing is nearly identical to Step 1.
 
 The most popular type of chunking is a simple grid-based system. Horizontal worlds like **Minecraft** and the afformentioned tutorial in Step 1 use this method. It is really easy to conceptualize because it is just a 2D grid. Minecraft actually has a second layer of chunks that few people know about called regions. Chunks are chunked together in regions which are saved as actual files in the minecraft world. Check out the algor
 
-### Step 3 - Make a 3D voxel world using marching cubes
+### Step 4 - Make a 3D voxel world using marching cubes
 Marching cubes is a popular method for voxel-based terrain because it is the most intuitive method when it comes to smooth 3D mesh generation. Marching cubes has its weaknesses for mesh generation but it's a good option for getting started because it allows you to focus on more complex memory managment techniques without simultaneiously having to worry about the signifcant learning curve added to mesh generation with distance fields. Don't know what that is? Don't worry cause at this point you don't have to.
 
 The first thing to know is that a topographical mesh, such as in Step 1 or Valheim, is easy because the mesh vertices are a simple grid with consistent xy coordinates where only the z coordinates are modified based on the heightmap. In other words, once you make a flat grid mesh, you only have to change it in a single dimension. 3D meshing suddenly goes up in complexity because you have to worry about generating
@@ -146,9 +151,10 @@ The most popular type of noise by far is perlin noise. It works well for many th
 ### Simplex Noise
 Simplex achieves the same results as Perlin Noise but at a faster computational rate
 
+
 ---
 ## World Partitioning, Chunks, and related Data Structures
-- These terms will broadly by referred to as chunking throughout the document.
+- These terms will broadly be referred to as chunking throughout the document.
 - Unfortunately wikipedia seems to have poor documents on this and I'm trying to provide links that will likely be around for a while but [Minecraft offers a good way to think about this topic](https://minecraft.fandom.com/wiki/Chunk). If you own the game and want to see it in action, press F3+G while in a game to show chunk boundaries.
 
 ### What is Space Partitioning and Chunking?
@@ -160,11 +166,24 @@ Think of your world in three main layers:
 3. World - In terms of data trees, this is a **root** of your data. This is the largest unit that encompasses everything.
 
 ### Why Use Chunking?
-The main limit on voxel games is data lookup times. If the data of each voxel is stored separately, we get slower read/write times (O(n)) as the world gets larger. If the data is stored contiguously in an array, it's nearly instant (O(1)) to read/write. But storing the data together limits the total size of the array because it would mean expanding the array (which means copying/pasting it) every time we want to expand the world. Furthermore, when creating a world file, we don't weant all the data in a single file because it would mean crazy lookup times for huge worlds.
-We *could* store the entire game world into one contiguous space in memory such as a single array. Games with small worlds like **Teardown** might do this but it severely limits the possible size of the world. If you want massive scales, you have to break it apart into batches where each batch is stored separately in memory.
+The main limit on voxel games is the absurd amount of data. If the data of each voxel is stored separately, we get slower read/write times (O(n)) as the world gets larger. If the data is stored contiguously in an array, it's nearly instant (O(1)) to read/write but one 32x32x32 set of voxels is just over 32k items which means the size of the data for our worlds can become absurdly huge very quickly and a single array just doesn't work at scale so it has to be handled in batches. If your world is finite and small, such as in **Teardown**, you could possibly get away with a single array with no chunking, but most use cases demand chunking.
+
+Minecraft Chunks are very gridlike which makes them easy to conceptualize. In minecraft, chunks are broken into 16x16x320 blocks, so from a top-down perspective it appears very gridlike. Unfortunately for you, dear reader, chunking doesn't end there. What many people don't know is that minecraft chunks are actually contained in even larger chunks that they call regions which are the actual individual files that make up a save file. It's possible to just end at one layer of chunks, but for massive worlds we need to have layers of chunks. Chunk-ception, if you will. We *could* just use one layer of chunks, but then you could run into soft limits to the size of your world. **Valheim** and **Terraria** likely do this or could at least get away with it because the worlds are finite and small compared to minecraft, but, again, this depends on the scale of your world. Even Minecraft regions eventually have issues but the rate that lookuptimes become cumbersome at that scale is only in edge cases like on huge or long-term minecraft servers. Very few users actually push their worlds to such an intense distance so anything more than 2 layers of chunks probably isn't really worth your time. The reason for this is in how we actually read/write data from storage.
+
+A common file type for this type of data is a json file. Just like with the arrays, we *could* store everything in a single place, but that's not good at scale. For arrays, the issue is that resizing arrays should be avoided when they are huge but the lookup times are always O(1). With file/io, pretty much every type of operation with a json file is O(n) so scaling becomes an issue once again. If we store 1 layer of chunks directly into memory, we will end up with a massive file directory to sift through (again, O(n)). By using regions (the 2nd chunk layer) we can have limited-size files while also having a managable-size directory to look through.
 
 ### Chunking Methods
-Minecraft Chunks are very gridlike which makes them easy to conceptualize. In minecraft, chunks are broken into 16x16x320 blocks, so from a top-down perspective it appears very gridlike. Unfortunately for you, dear reader, chunking doesn't end there. What many people don't know is that minecraft chunks are actually contained in even larger chunks that they call regions. It's possible to just end at one layer of chunks, but for massive worlds we need to have layers of chunks. Chunk-ception, if you will. . then you could run into soft limits to the size of your world. **Valheim** and **Terraria** likely do this or could at least get away with it because the worlds are finite, but, again, this depends on the scale of your world. Even Minecraft regions eventually have issues but the rate that lookuptimes become cumbersome at that scale is only in edge cases like on huge or long-term minecraft servers. Very few users actually push their worlds to such an intense distance so anything more isn't really worth your time. Just like with storing individual voxels, the more chunks you have, the longer the lookup times become. If you want near-infinite or massive worlds like planets, you have to start layering chunks into larger chunks. To be clear, no game is infinite; Minecraft, for instance, is limited to 32bit integer coordinates (just over 2 million blocks from spawn) but the scale is large enough that we can effectively treat it as infinite. 
+
+If your world's data is also very vertical (such as a planet) or if you want high render distances, you will need to use a data tree like a quadtree or octree. For reference, Minecraft, despite having depth, loads very horizontally and doesn't have high render distances so it does not use data-trees.
+
+Here are common chunking methods:
+- Map/Dictionary for absolutely massive worlds that can't be loaded into memory all at once - Used for file/io, this is the highest level chunk
+- 2D Array of Chunks - Good for horizontally generated worlds where depth and render distance are limited
+- Quadtree - Good for horizontal worlds that us a heightmap and need high render distance such as Valheim
+- Octree - Good for worlds that are generated more 3 dimensionally such as planets
+
+Use a combination of the above methds based on your needs, here are some examples of structures or approaches that other games may have taken:
+-
 
 ---
 ## Basics of Mesh Generation
