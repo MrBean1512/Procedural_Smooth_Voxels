@@ -98,7 +98,12 @@ Here are common chunking methods:
 ---
 ### Mesh Generation Algorithms
 There's many ways to get smooth voxel generation but they are not all created equal. Before understanding these, you need to understand how meshes work. Here's some basic terminology for meshes:
-
+- Vertex (vertices/vert) - The corner/point of each tri/quad. Represents *where* to place geometry with coordinates. It has three data points which are the local X, Y, and Z coordinates. 
+- Triangle/Quadrilateral (tri/quad/face) - The visual plane that textures/shaders are drawn onto. This is typically a triangle made up of 3 vertices but can be a quad which is made up of 4 or there can even more but if you want more than 4 points on a face, then you probably are well beyond this stage of information. Each item in the tri array is a collection of vertex indices from the vertex array.
+- UV - This provides information about how a 2D texture should be wrapped around 3D models. We will not need this with full-scale landscapes as we will be using a shader technique called triplanar mapping to have coordinate-based textures rather than fixed textures.
+- Normal - This tells the GPU the direction that this point is facing. It doesn't impact geometry or collision but it is important for the graphics layer for stuff like lighting info so that light hitting a face at an angle can be dampened or reflected in the correct direction. It can also be useful for more advanced shader techniques like tesselation or bumpmaps
+- Tangent - Like the normals, this provides useful info about the direction of a face but it controls the smoothness of transitions between neighboring faces. This is useful for having visually soft edges around sharp geometry. Thankfully, with terrain, we can always have a consistent value for smoothness so you dont have to worry about complex calculations, it can just be difficult between neighboring meshes but slight mismatches of tangents on terrain aren't too big of a problem.
+- RGBA Color Channels (Beware!) - This is the rgb color scale for each vertex. In terrain, you'll never use this for actual color, instead, you can use it to pass aditional info to the gpu and then have each channel represent something like a different texture. For instance, red might be grass, green is dirt, and blue is stone. You can take it one step further by combining the bit values of the built-in RGBA channels to create index ids for a color array, but be careful with this because default color blending will mess with the output. In other words, UE5 will combine red (255,0,0) and blue (0,0,255) to create purple (127,0,127) which is a *completely* different value in bits ; the pixel sampling will show you everything in between. In other words, use the color channel as a single int index/id for textures and then handle the blending on the gpu because things like blend weights can be universal.
 
 Transvoxel (at the bottom of this list) is the approach I will be taking and that I'd recommend for most voxel game engines.
 - Marching Cubes (MC)
@@ -167,8 +172,3 @@ The most popular type of chunking is a simple grid-based system. Horizontal worl
 Marching cubes is a popular method for voxel-based terrain because it is the most intuitive method when it comes to smooth 3D mesh generation. Marching cubes has its weaknesses for mesh generation but it's a good option for getting started because it allows you to focus on more complex memory managment techniques without simultaneiously having to worry about the signifcant learning curve added to mesh generation with distance fields. Don't know what that is? Don't worry cause at this point you don't have to.
 
 The first thing to know is that a topographical mesh, such as in Step 1 or Valheim, is easy because the mesh vertices are a simple grid with consistent xy coordinates where only the z coordinates are modified based on the heightmap. In other words, once you make a flat grid mesh, you only have to change it in a single dimension. 3D meshing suddenly goes up in complexity because you have to worry about generating
-
-
----
-## Mesh Stitching With LOD
-
