@@ -91,8 +91,8 @@ Common terms used with voxels are as follows:
 
 Here are common chunking methods:
 - Map/Dictionary for absolutely massive worlds that can't be loaded into memory all at once - Used for file/io, this is the highest level chunk
-- 2D Array of Chunks - Good for horizontally generated worlds where depth and render distance are limited
-- Quadtree - Good for horizontal worlds that us a heightmap and need high render distance such as Valheim
+- 2D Array of Chunks - Good for horizontally generated worlds where depth and render distance are limited. It has easy data management but render distances are limited.
+- Quadtree - Good for horizontal worlds that are horizontally generated but need high render distances
 - Octree - Good for worlds that are generated more 3 dimensionally such as planets
 
 ---
@@ -105,7 +105,7 @@ There's many ways to get smooth voxel generation but they are not all created eq
 - Tangent - Like the normals, this provides useful info about the direction of a face but it controls the smoothness of transitions between neighboring faces. This is useful for having visually soft edges around sharp geometry. Thankfully, with terrain, we can always have a consistent value for smoothness so you dont have to worry about complex calculations, it can just be difficult between neighboring meshes but slight mismatches of tangents on terrain aren't too big of a problem.
 - RGBA Color Channels (Beware!) - This is the rgb color scale for each vertex. In terrain, you'll never use this for actual color, instead, you can use it to pass aditional info to the gpu and then have each channel represent something like a different texture. For instance, red might be grass, green is dirt, and blue is stone. You can take it one step further by combining the bit values of the built-in RGBA channels to create index ids for a color array, but be careful with this because default color blending will mess with the output. In other words, UE5 will combine red (255,0,0) and blue (0,0,255) to create purple (127,0,127) which is a *completely* different value in bits ; the pixel sampling will show you everything in between. In other words, use the color channel as a single int index/id for textures and then handle the blending on the gpu because things like blend weights can be universal.
 
-Transvoxel (at the bottom of this list) is the approach I will be taking and that I'd recommend for most voxel game engines.
+- Transvoxel (at the bottom of this list) is the approach I will be taking and that I'd recommend for most voxel game engines.
 - Marching Cubes (MC)
    - Fast table‑driven triangulation of uniform grids; smooth but blurs sharp edges.
    - Strengths: This is the most common 3D voxel algorithm. It is highly documented and it is one of the most intuitive approaches to smooth voxels.
@@ -126,7 +126,7 @@ Transvoxel (at the bottom of this list) is the approach I will be taking and tha
    - Strengths: Preserves sharp edges and features. Great where detail and geometry preservation is important.
    - Weaknesses: Poor LOD support. Overkill for games, this method is slower and preserves detail that players just don't care about. This voxel algorithm is best for stuff like medical scans or real-life applications. If detailed geometry is important, I recommend achieving that with shaders/tesselation.
 - **Transvoxel**
-   - Extends Marching Cubes to support seamless LOD transitions by introducing a second class of cells called transition cells. These cells sit between coarse and fine voxel regions and use a dedicated lookup table that maps all possible LOD boundary configurations to a watertight triangle pattern. The key idea is that coarse edges subdivide in a predictable way, and the transition cell topology is designed so that fine‑resolution triangles align perfectly with the coarse ones. This avoids cracks without requiring skirts, vertex welding, or complex octree logic. In practice, Transvoxel is fast, parallel‑friendly, and ideal for terrain engines because it preserves the simplicity of MC while solving the one thing MC cannot handle: mismatched resolutions. You generate normal MC meshes inside each LOD region, then generate transition meshes only along the boundaries. This method is specifically designed for terrain generation in games where most other voxel meshing algorithms work with games but aren't really great for this.
+   - Extends Marching Cubes to support seamless LOD transitions by introducing a second class of cells called transition cells. These cells sit between coarse and fine voxel regions (high and low LOD) and use a dedicated lookup table that maps all possible LOD boundary configurations to a watertight triangle pattern. The key idea is that coarse edges subdivide in a predictable way, and the transition cell topology is designed so that fine‑resolution triangles align perfectly with the coarse ones. This avoids cracks without requiring skirts, vertex welding, or complex octree logic. In practice, Transvoxel is fast, parallel‑friendly, and ideal for terrain engines because it preserves the simplicity of MC while solving the one thing MC cannot handle: mismatched resolutions. You generate normal MC meshes inside each LOD region, then generate transition meshes only along the boundaries. This method is specifically designed for terrain generation in games where most other voxel meshing algorithms work with games but aren't really great for this.
    - Strengths:
       - Fast
       - No overlapping geometry/z-fighting - This doesn't matter for mesh geometry but can cause shader issues with normals and tangents
@@ -136,6 +136,11 @@ Transvoxel (at the bottom of this list) is the approach I will be taking and tha
       - Large lookup tables (although this probably isn't really a problem since lookup times are fast and we're not altering the table data ever).
       - Separate meshes for transition cells - This feels like a bit of an irritating solution because I'd rather have a single mesh per chunk/node but the alternatives are confusing and the performance loss is negligible.
       - More vertices than necessary.
+
+### Texturing Techniques
+I haven't done enough research on this subject but this is a pretty solid source: [https://voxel-tools.readthedocs.io/en/latest/smooth_terrain/](https://voxel-tools.readthedocs.io/en/latest/smooth_terrain/)
+
+One thing to be aware of is that most solutions have extremely limited amounts of textures. Make sure you read the fine print on any solution before getting in too deep.
 
 ---
 ## Recommended Tutorials
